@@ -20,7 +20,7 @@ let idCounter = 0;
 export const addDummyDbItems = (n: number): DbItemWithId[] => {
     const createdSignatures: DbItemWithId[] = [];
     for (let count = 0; count < n; count++) {
-        const createdSignature = addDbItem({
+        const createdSignature = todoItem({
             // possibly add some generated data here
         });
         createdSignatures.push(createdSignature);
@@ -34,7 +34,7 @@ export const addDummyDbItems = (n: number): DbItemWithId[] => {
  * @param data - the item data to insert in
  * @returns the item added (with a newly created id)
  */
-export const addDbItem = (data: DbItem): DbItemWithId => {
+export const todoItem = (data: DbItem): DbItemWithId => {
     const newEntry: DbItemWithId = {
         id: ++idCounter,
         ...data,

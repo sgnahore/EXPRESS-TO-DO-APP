@@ -1,19 +1,16 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import {
-    addDummyDbItems,
-    addDbItem,
-    getAllDbItems,
-    getDbItemById,
-    DbItem,
-    updateDbItemById,
-} from "./db";
+import { addDummyDbItems, getDbItemById } from "./db";
 import filePath from "./filePath";
+import { Client } from "pg";
 
 // loading in some dummy items into the database
 // (comment out if desired, or change the number)
 addDummyDbItems(20);
+
+const client = new Client({ database: "perntodo" });
+client.connect();
 
 const app = express();
 
@@ -35,53 +32,55 @@ app.get("/", (req, res) => {
     res.sendFile(pathToFile);
 });
 
-// GET /items
-app.get("/items", (req, res) => {
-    const allSignatures = getAllDbItems();
-    res.status(200).json(allSignatures);
+// GET /todos
+app.get("/todos", async (req, res) => {
+    const text = "SELECT * FROM todo";
+    const response = await client.query(text);
+
+    res.status(200).json(response.rows);
 });
 
-// POST /items
-app.post<{}, {}, DbItem>("/items", (req, res) => {
-    // to be rigorous, ought to handle non-conforming request bodies
-    // ... but omitting this as a simplification
-    const postData = req.body;
-    const createdSignature = addDbItem(postData);
-    res.status(201).json(createdSignature);
+// POST /todos
+app.post<{ description: string }>("/todos", async (req, res) => {
+    const { description } = req.body;
+    const text = "INSERT INTO todo (description) VALUES($1) RETURNING *";
+    const values = [description];
+
+    const newToDoEntry = await client.query(text, values);
+
+    res.status(201).json(newToDoEntry.rows[0]);
+});
+
+// PUT /todos/:id ???
+app.put<{ id: number }, {}, { description: string }>(
+    "/todos/:id",
+    async (req, res) => {
+        const { id } = req.params;
+        const { description } = req.body;
+
+        const updateToDoEntry = {
+            text: "UPDATE todo SET description = $1 WHERE id = $2",
+            values: [description, id],
+        };
+
+        const update = await client.query(updateToDoEntry);
+
+        res.status(200).json("Entry updated");
+    }
+);
+
+// DELETE /items/:id
+app.delete<{ id: string }>("/todos/:id", async (req, res) => {
+    const id = req.params.id;
+    const text = "DELETE FROM todo WHERE id = $1";
+    const values = [id];
+    const response = await client.query(text, values);
+
+    res.status(200).json("Entry deleted");
 });
 
 // GET /items/:id
-app.get<{ id: string }>("/items/:id", (req, res) => {
-    const matchingSignature = getDbItemById(parseInt(req.params.id));
-    if (matchingSignature === "not found") {
-        res.status(404).json(matchingSignature);
-    } else {
-        res.status(200).json(matchingSignature);
-    }
-});
-
-// DELETE /items/:id
-app.delete<{ id: string }>("/items/:id", (req, res) => {
-    const matchingSignature = getDbItemById(parseInt(req.params.id));
-    if (matchingSignature === "not found") {
-        res.status(404).json(matchingSignature);
-    } else {
-        res.status(200).json(matchingSignature);
-    }
-});
-
-// PATCH /items/:id
-app.patch<{ id: string }, {}, Partial<DbItem>>("/items/:id", (req, res) => {
-    const matchingSignature = updateDbItemById(
-        parseInt(req.params.id),
-        req.body
-    );
-    if (matchingSignature === "not found") {
-        res.status(404).json(matchingSignature);
-    } else {
-        res.status(200).json(matchingSignature);
-    }
-});
+app.get<{ id: string }>("/todos/:id", (req, res) => {});
 
 app.listen(PORT_NUMBER, () => {
     console.log(`Server is listening on port ${PORT_NUMBER}!`);
