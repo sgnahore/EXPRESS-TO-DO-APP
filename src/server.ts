@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { addDummyDbItems, getDbItemById } from "./db";
+import { addDummyDbItems } from "./db";
 import filePath from "./filePath";
 import { Client } from "pg";
 
@@ -63,7 +63,7 @@ app.put<{ id: number }, {}, { description: string }>(
             values: [description, id],
         };
 
-        const update = await client.query(updateToDoEntry);
+        await client.query(updateToDoEntry);
 
         res.status(200).json("Entry updated");
     }
@@ -74,13 +74,14 @@ app.delete<{ id: string }>("/todos/:id", async (req, res) => {
     const id = req.params.id;
     const text = "DELETE FROM todo WHERE id = $1";
     const values = [id];
-    const response = await client.query(text, values);
+
+    await client.query(text, values);
 
     res.status(200).json("Entry deleted");
 });
 
 // GET /items/:id
-app.get<{ id: string }>("/todos/:id", (req, res) => {});
+// app.get<{ id: string }>("/todos/:id", (req, res) => {});
 
 app.listen(PORT_NUMBER, () => {
     console.log(`Server is listening on port ${PORT_NUMBER}!`);
