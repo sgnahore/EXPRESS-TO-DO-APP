@@ -51,7 +51,7 @@ app.post<{ description: string }>("/todos", async (req, res) => {
     res.status(201).json(newToDoEntry.rows[0]);
 });
 
-// PUT /todos/:id ???
+// PUT /todos/:id
 app.put<{ id: number }, {}, { description: string }>(
     "/todos/:id",
     async (req, res) => {
